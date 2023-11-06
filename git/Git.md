@@ -92,3 +92,79 @@ git pull origin main --allow-unrelated-histories
 6. **联系 GitHub 支持**：如果你尝试了以上方法仍然无法解决问题，可以联系 GitHub 支持寻求进一步的帮助。
 
 如果你的问题仍然存在，请提供更多细节，例如你的操作步骤和 Git 配置，以便提供更具体的建议。
+
+
+# 合并有冲突的没有共同历史记录的分支
+```shell
+❯ git pull origin main --allow-unrelated-histories
+
+From https://github.com/Liu-Shihao/doc
+ * branch            main       -> FETCH_HEAD
+hint: You have divergent branches and need to specify how to reconcile them.
+hint: You can do so by running one of the following commands sometime before
+hint: your next pull:
+hint: 
+hint:   git config pull.rebase false  # merge
+hint:   git config pull.rebase true   # rebase
+hint:   git config pull.ff only       # fast-forward only
+hint: 
+hint: You can replace "git config" with "git config --global" to set a default
+hint: preference for all repositories. You can also pass --rebase, --no-rebase,
+hint: or --ff-only on the command line to override the configured default per
+hint: invocation.
+fatal: Need to specify how to reconcile divergent branches.
+(base) 
+
+```
+
+
+
+这个错误信息表明你的分支之间存在分歧（divergent branches），需要明确指定如何协调它们。你可以按照错误提示中提到的方法之一来解决这个问题。
+
+1. **使用 `--rebase` 进行变基合并**：要使用变基合并（rebase），可以运行以下命令：
+
+   ```bash
+   git pull origin main --rebase
+   ```
+
+   这将将你的本地分支上的提交放在远程分支的顶部，看起来就像它们一直在同一条历史线上。
+
+2. **使用 `--no-rebase` 进行传统合并**：要执行传统合并（merge），可以运行以下命令：
+
+   ```bash
+   git pull origin main --no-rebase
+   ```
+
+   这将创建一个新的合并提交来整合分歧的历史。
+
+3. **使用 `--ff-only` 进行快进合并**：如果你确定可以进行快进合并，可以运行以下命令：
+
+   ```bash
+   git pull origin main --ff-only
+   ```
+
+   这将只执行快进合并，不会创建新的合并提交。
+
+选择其中一个选项，根据你的需求来合并分支。如果你想设置一个默认选项，你可以使用以下命令：
+
+- 设置默认为变基合并：
+
+  ```bash
+  git config pull.rebase true
+  ```
+
+- 设置默认为传统合并：
+
+  ```bash
+  git config pull.rebase false
+  ```
+
+- 设置默认为快进合并：
+
+  ```bash
+  git config pull.ff only
+  ```
+
+这样你在未来的 pull 操作中将会使用默认的合并方式。如果你希望设置全局默认值，可以在上述命令中加上 `--global` 选项。
+
+在选择合并方式时，要根据你的项目需求和工作流程来决定哪种方式最适合。
