@@ -263,6 +263,59 @@ VALUES (1, TO_TIMESTAMP('2024-01-09 17:40:47', 'YYYY-MM-DD HH24:MI:SS'),
 
 在这个例子中，`timestamp_column` 是普通的 `TIMESTAMP` 列，不包含时区信息；`timestamp_with_time_zone_column` 是带有时区信息的 `TIMESTAMP WITH TIME ZONE` 列；`timestamp_with_local_time_zone_column` 是带有本地时区信息的 `TIMESTAMP WITH LOCAL TIME ZONE` 列。
 
+# GRANT命令
+
+`GRANT` 是 SQL 中的一种授权命令，用于授予用户或角色在数据库对象上执行特定操作的权限。`GRANT` 允许数据库管理员赋予用户或角色对表、视图、存储过程等数据库对象的操作权限，包括 `SELECT`、`INSERT`、`UPDATE`、`DELETE` 等。
+
+基本的语法如下：
+
+```sql
+GRANT privileges
+ON object
+TO user_or_role;
+```
+
+其中：
+- `privileges` 是授予的权限，如 `SELECT`、`INSERT`、`UPDATE`、`DELETE` 等。
+- `object` 是数据库对象的名称，如表、视图等。
+- `user_or_role` 是接收权限的用户或角色。
+
+以下是一些示例：
+
+1. **授予 SELECT 权限给用户：**
+
+   ```sql
+   GRANT SELECT ON employees TO user1;
+   ```
+
+   这将允许 `user1` 对 `employees` 表执行 `SELECT` 操作。
+
+2. **授予 INSERT、UPDATE 权限给角色：**
+
+   ```sql
+   GRANT INSERT, UPDATE ON products TO sales_role;
+   ```
+
+   这将允许 `sales_role` 对 `products` 表执行 `INSERT` 和 `UPDATE` 操作。
+
+3. **授予所有权限给用户：**
+
+   ```sql
+   GRANT ALL PRIVILEGES ON orders TO admin_user;
+   ```
+
+   这将允许 `admin_user` 对 `orders` 表执行所有的操作。
+
+4. **授予执行存储过程的权限：**
+
+   ```sql
+   GRANT EXECUTE ON calculate_total TO finance_user;
+   ```
+
+   这将允许 `finance_user` 执行名为 `calculate_total` 的存储过程。
+
+`GRANT` 命令是数据库安全性的重要组成部分，通过它，管理员可以精确地控制哪些用户或角色可以访问数据库中的哪些对象以及执行哪些操作。在使用 `GRANT` 命令时，需要小心确保授予的权限是必需的，并仔细管理用户和角色的权限，以维护数据库的安全性。
+
 
 
 

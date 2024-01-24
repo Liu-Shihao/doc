@@ -1,6 +1,44 @@
 # Git
+设置远程分支地址
+```shell
+git remote set-url origin https://github.com/your-username/your-repository.git
+git remote -v
+```
 
 
+
+从远程仓库获取最新的提交和对象
+```shell
+git fetch <远程仓库名称>
+git fetch origin
+git fetch -v origin master
+git fetch -v --all
+```
+
+
+```shell
+
+git pull <远程仓库名称> <远程分支名称>
+git pull origin master
+
+git push <远程仓库名称> <本地分支名称>:<远程分支名称>
+git push origin feature-branch:feature-branch
+
+
+git push -u origin main
+
+
+```
+在使用 git push 时，如果您是第一次推送本地分支到远程仓库，可以使用 -u 选项设置跟踪关系，使得将来的 git pull 和 git push 可以自动关联本地分支与远程分支。
+
+
+
+将暂存区的更改提交到本地仓库
+```shell
+git commit -m "提交消息"
+git commit -m "Add new feature"
+
+```
 
 ```shell
 
