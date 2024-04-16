@@ -1,3 +1,30 @@
+# 判断 content_type,接收Json参数
+```python
+    content_type = request.headers.get('Content-Type', '')
+
+    if content_type == 'application/json':
+        data = request.json
+        if 'prompt' in data:
+            search_text = data['prompt']
+            return jsonify({'message': 'Text search request received', 'search_text': search_text})
+    elif content_type.startswith('multipart/form-data'):
+        if 'file' in request.files:
+            file = request.files['file']
+            if file and allowed_img(file.filename):
+                save_disk(file)
+                # TODO Img
+                return jsonify({'msg': 'Image saved and search request received successfully'})
+            elif file and allowed_file(file.filename):
+                save_disk(file)
+                # TODO File
+                return jsonify({'msg': 'File saved and search request received successfully'})
+            else:
+                return jsonify({'error': 'Invalid file'})
+        else: return jsonify({'error': 'No image provided'})
+    else:
+        return jsonify({'error': 'Unsupported Media Type'}), 415
+```
+
 # if 非null非空判断
 
 你可以使用Python中的条件语句（`if`语句）来实现这个功能。以下是一个示例代码，演示如何检查请求 JSON 参数中的 `"context"` 是否存在且值为 `"LOAN"`：
