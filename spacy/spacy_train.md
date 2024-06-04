@@ -1,5 +1,185 @@
 
 # 模型训练
+在Spacy中，可以将多个任务（例如文本分类和命名实体识别）集成到一个模型管道中，并对其进行联合训练。这可以通过在配置文件中定义多个组件（`textcat`和`ner`）来实现。下面是一个示例，展示如何在Spacy中训练包含`textcat`和`ner`任务的模型。
+
+### 步骤
+
+1. **安装必要的库**：
+   确保你已经安装了Spacy及其依赖项。
+   ```sh
+   pip install spacy
+   pip install -U spacy[transformers]
+   ```
+
+2. **准备数据**：
+   准备NER和文本分类的训练数据。对于NER，数据格式为`(text, {"entities": [(start, end, label), ...]})`；对于文本分类，数据格式为`(text, {"cats": {"LABEL": score, ...}})`。
+
+3. **创建Spacy配置文件**：
+   创建一个配置文件`config.cfg`，定义NER和文本分类组件。
+
+### 配置文件示例（config.cfg）
+```ini
+[system]
+gpu_allocator = "pytorch"
+seed = 0
+
+[nlp]
+lang = "en"
+pipeline = ["tok2vec", "ner", "textcat"]
+batch_size = 1000
+
+[components]
+
+[components.tok2vec]
+factory = "tok2vec"
+
+[components.ner]
+factory = "ner"
+
+[components.textcat]
+factory = "textcat"
+
+[components.tok2vec.model]
+@architectures = "spacy.Tok2Vec.v2"
+width = 96
+embed = {
+    @architectures = "spacy.MultiHashEmbed.v2"
+    width = 96
+    rows = 5000
+    attrs = ["ORTH", "LOWER", "PREFIX", "SUFFIX"]
+    include_static_vectors = false
+}
+encode = {
+    @architectures = "spacy.MaxoutWindowEncoder.v2"
+    width = 96
+    window_size = 1
+    maxout_pieces = 3
+    depth = 4
+}
+
+[components.ner.model]
+@architectures = "spacy.TransitionBasedParser.v2"
+state_type = "ner"
+extra_state_tokens = false
+hidden_width = 128
+tok2vec = ${components.tok2vec.model}
+
+[components.textcat.model]
+@architectures = "spacy.TextCatEnsemble.v2"
+exclusive_classes = false
+ngram_size = 1
+no_output_layer = false
+tok2vec = ${components.tok2vec.model}
+
+[training]
+optimizer = "Adam"
+optimizer_b1 = 0.9
+optimizer_b2 = 0.999
+optimizer_eps = 1e-08
+dropout = 0.2
+batch_size = 1000
+max_epochs = 50
+patience = 200
+
+[training.batcher]
+@batchers = "spacy.batch_by_padded.v1"
+discard_oversize = true
+size = 1000
+get_length = null
+
+[training.schedule]
+@schedule = "warmup_linear.v1"
+warmup_steps = 200
+total_steps = 10000
+```
+
+### 训练脚本
+创建一个Python脚本来加载数据、创建训练实例，并启动训练过程。
+
+```python
+import spacy
+from spacy.training.example import Example
+from spacy.util import minibatch, compounding
+import random
+
+# 加载空白模型
+nlp = spacy.blank("en")
+
+# 添加tok2vec、ner、textcat组件
+config = {
+    "model": {
+        "@architectures": "spacy.Tok2Vec.v2",
+        "width": 96,
+        "embed": {
+            "@architectures": "spacy.MultiHashEmbed.v2",
+            "width": 96,
+            "rows": 5000,
+            "attrs": ["ORTH", "LOWER", "PREFIX", "SUFFIX"],
+            "include_static_vectors": False
+        },
+        "encode": {
+            "@architectures": "spacy.MaxoutWindowEncoder.v2",
+            "width": 96,
+            "window_size": 1,
+            "maxout_pieces": 3,
+            "depth": 4
+        }
+    }
+}
+
+tok2vec = nlp.add_pipe("tok2vec", config=config)
+ner = nlp.add_pipe("ner")
+textcat = nlp.add_pipe("textcat")
+
+# 添加标签
+ner.add_label("PERSON")
+textcat.add_label("POSITIVE")
+textcat.add_label("NEGATIVE")
+
+# 准备训练数据
+TRAIN_DATA = [
+    ("I love this product!", {"cats": {"POSITIVE": 1.0, "NEGATIVE": 0.0}}),
+    ("This is the worst thing ever.", {"cats": {"POSITIVE": 0.0, "NEGATIVE": 1.0}}),
+    ("Barack Obama was the 44th President of the United States.", {"entities": [(0, 12, "PERSON")]}),
+]
+
+# 开始训练
+nlp.begin_training()
+
+# 训练循环
+for i in range(20):
+    random.shuffle(TRAIN_DATA)
+    losses = {}
+    batches = minibatch(TRAIN_DATA, size=compounding(4.0, 32.0, 1.001))
+    for batch in batches:
+        examples = []
+        for text, annotations in batch:
+            doc = nlp.make_doc(text)
+            example = Example.from_dict(doc, annotations)
+            examples.append(example)
+        nlp.update(examples, losses=losses)
+    print(f"Losses at iteration {i}: {losses}")
+
+# 保存模型
+nlp.to_disk("model")
+
+# 测试模型
+doc = nlp("Donald Trump was the 45th President.")
+print("Entities:", [(ent.text, ent.label_) for ent in doc.ents])
+print("Textcat:", doc.cats)
+```
+
+### 解释
+
+1. **加载空白模型**：创建一个空白模型（`spacy.blank("en")`），然后添加`tok2vec`、`ner`和`textcat`组件。
+2. **配置tok2vec**：定义`tok2vec`组件的配置，并添加到管道中。
+3. **添加标签**：为`ner`和`textcat`组件添加标签。
+4. **准备训练数据**：准备训练数据，包括文本分类和命名实体识别的数据。
+5. **开始训练**：初始化训练并进行多次迭代，逐步更新模型。
+6. **保存模型**：训练完成后，将模型保存到磁盘。
+7. **测试模型**：加载并测试训练好的模型，检查命名实体和文本分类的结果。
+
+通过这种方式，你可以将文本分类和命名实体识别任务集成到一个Spacy模型中，并对其进行联合训练。
 
 # 模型评估
 在spaCy中，`ner.evaluate()`函数用于评估命名实体识别（NER）模型的性能。它返回一个包含评估指标的字典，这些指标反映了模型在给定数据上的性能。
