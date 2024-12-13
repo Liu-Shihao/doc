@@ -1,3 +1,4 @@
+```
 以下是一个针对你描述的情景的 OpenAI LLM System Prompt，确保在提示中包括明确的目标和结构化要求，以实现准确和高效的响应：
 
 Prompt:
@@ -44,3 +45,5 @@ Notes:
 	•	If the necessary information is not found, include a Solution stating next debugging steps.
 
 This structured prompt ensures the assistant adheres to clear guidelines while leveraging tools effectively.
+
+```
